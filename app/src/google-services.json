@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "821575984333",
+    "project_id": "mathoraga-494a9",
+    "storage_bucket": "mathoraga-494a9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:821575984333:android:6a32ba6a018320266c7584",
+        "android_client_info": {
+          "package_name": "com.example.noamapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBTm5mR2bpOrNdlMZpJkfwB84STd5lYNhg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
