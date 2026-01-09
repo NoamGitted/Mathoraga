@@ -1,5 +1,6 @@
 package com.example.noamapp;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
@@ -22,7 +23,7 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
 public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
-    private static final String TAG = "Noam";
+
 
     private FirebaseAuth mAuth;
     Button btnSubmit;
@@ -76,6 +77,8 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
                         Toast.makeText(SignUp.this, "Account created successfully!", Toast.LENGTH_SHORT).show();
+                        Intent transferToMainMenu = new Intent(SignUp.this, com.example.noamapp.MainMenu.class);
+                        startActivity(transferToMainMenu);
                         // Navigate to another activity
 
                     } else {

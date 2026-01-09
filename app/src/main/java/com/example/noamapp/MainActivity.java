@@ -3,6 +3,7 @@ package com.example.noamapp;
 import android.content.Intent;
 import android.media.Image;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -18,9 +19,11 @@ import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
+    private static final String TAG = "Noam";
     private FirebaseAuth mAuth;
+    Button login, signup;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,30 +37,38 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        mAuth = FirebaseAuth.getInstance();
 
-        Button login = findViewById(R.id.supabuttonlogin);
-        Button signup = findViewById(R.id.supabuttonsignup);
+        login = findViewById(R.id.supabuttonlogin);
+        signup = findViewById(R.id.supabuttonsignup);
 
+        login.setOnClickListener(this);
+        signup.setOnClickListener(this);
+    }
+    @Override
+    //is someone there?
+    public void onStart() {
+        super.onStart();
+        // Check if user is signed in (non-null) and update UI accordingly.
+        FirebaseUser currentUser = mAuth.getCurrentUser();
+        if (currentUser != null) {
 
+            Intent main = new Intent(MainActivity.this, com.example.noamapp.MainMenu.class);
+            startActivity(main);
+            finish();
+        }
+    }
 
-        login.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent logIn = new Intent(MainActivity.this, com.example.noamapp.LogIn.class);
-                startActivity(logIn);
-
-
-                }
-        });
-
-        signup.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent signUp = new Intent(MainActivity.this, com.example.noamapp.SignUp.class);
-                startActivity(signUp);
-
-            }
-        });
+    public void onClick(View v) {
+        int id = v.getId();
+        if (id == R.id.supabuttonlogin) {
+            Intent logIn = new Intent(MainActivity.this, com.example.noamapp.LogIn.class);
+            startActivity(logIn);
+        }
+        if (id == R.id.supabuttonsignup) {
+            Intent signup = new Intent(MainActivity.this, com.example.noamapp.SignUp.class);
+            startActivity(signup);
+        }
     }
 }
 
