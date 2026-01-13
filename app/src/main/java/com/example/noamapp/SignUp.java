@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Button;
@@ -23,107 +24,120 @@ import com.google.firebase.auth.FirebaseAuthUserCollisionException;
 
 public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
-
-
     private FirebaseAuth mAuth;
-    Button btnSubmit;
-    EditText etEmail;
-    EditText etPassword;
+    private Button btnSubmit;
+    private EditText etEmail, etPassword;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_sign_up);
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        // Initializing
+        // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
 
+        // Initialize UI Elements
         btnSubmit = findViewById(R.id.btnSubmit);
-        btnSubmit.setOnClickListener(this);
-
-
-        etEmail = findViewById(R.id.username);
+        etEmail = findViewById(R.id.username); // Ensure IDs match your XML
         etPassword = findViewById(R.id.password);
 
+        btnSubmit.setOnClickListener(this);
+
+        // Attach listeners to reset the red background when user starts typing
         etEmail.addTextChangedListener(new ResetBackgroundTextWatcher(etEmail));
         etPassword.addTextChangedListener(new ResetBackgroundTextWatcher(etPassword));
     }
 
     @Override
     public void onClick(View v) {
-        //Setting the Strings
+        // 1. Reset UI: Clear previous errors and red backgrounds
+        etEmail.setBackgroundColor(Color.TRANSPARENT);
+        etPassword.setBackgroundColor(Color.TRANSPARENT);
+        etEmail.setError(null);
+        etPassword.setError(null);
+
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
 
-        // Client-side validation
-        if (email.isEmpty()) {
-
-            Toast.makeText(SignUp.this, "Email cannot be empty.", Toast.LENGTH_SHORT).show();
-            return;
+        // 2. Client-side validation: Check for empty fields using TextUtils
+        boolean hasError = false;
+        if (TextUtils.isEmpty(email)) {
+            etEmail.setError("Email is required.");
+            etEmail.setBackgroundColor(Color.RED);
+            hasError = true;
         }
-        if (password.isEmpty()) {
-
-            Toast.makeText(SignUp.this, "Password cannot be empty.", Toast.LENGTH_SHORT).show();
-            return;
+        if (TextUtils.isEmpty(password)) {
+            etPassword.setError("Password is required.");
+            etPassword.setBackgroundColor(Color.RED);
+            hasError = true;
         }
 
+        if (hasError) return;
+
+        // 3. Firebase Registration
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, task -> {
                     if (task.isSuccessful()) {
+                        // Success!
                         Toast.makeText(SignUp.this, "Account created successfully!", Toast.LENGTH_SHORT).show();
                         Intent transferToMainMenu = new Intent(SignUp.this, com.example.noamapp.MainMenu.class);
                         startActivity(transferToMainMenu);
-                        // Navigate to another activity
-
+                        finish();
                     } else {
-                        Exception exception = task.getException();
-                        if (exception instanceof FirebaseAuthWeakPasswordException) {
+                        // Failure: Identify the specific registration error
+                        try {
+                            throw task.getException();
+                        } catch (FirebaseAuthWeakPasswordException e) {
+                            // CASE: Password is less than 6 characters
+                            etPassword.setError("Password too weak (min 6 characters).");
                             etPassword.setBackgroundColor(Color.RED);
-                            Toast.makeText(SignUp.this, "Password too weak (min 6 characters).", Toast.LENGTH_LONG).show();
-                        } else if (exception instanceof FirebaseAuthInvalidCredentialsException) {
+                            etPassword.requestFocus();
+                        } catch (FirebaseAuthInvalidCredentialsException e) {
+                            // CASE: Email is not formatted correctly (e.g., missing @)
+                            etEmail.setError("Invalid email format.");
                             etEmail.setBackgroundColor(Color.RED);
-                            Toast.makeText(SignUp.this, "Invalid email address format.", Toast.LENGTH_LONG).show();
-                        } else if (exception instanceof FirebaseAuthUserCollisionException) {
+                            etEmail.requestFocus();
+                        } catch (FirebaseAuthUserCollisionException e) {
+                            // CASE: This email is already registered to someone else
+                            etEmail.setError("This email is already registered.");
                             etEmail.setBackgroundColor(Color.RED);
-                            Toast.makeText(SignUp.this, "Account with this email already exists.", Toast.LENGTH_LONG).show();
-                        } else if (exception != null) {
-                            // Generic error handler
-                            Toast.makeText(SignUp.this, "Authentication failed: " + exception.getMessage(), Toast.LENGTH_LONG).show();
-                            etEmail.setBackgroundColor(Color.TRANSPARENT);
-                            etPassword.setBackgroundColor(Color.TRANSPARENT);
-                        } else {
-                            // This case should ideally not happen if task.isSuccessful() is false
-                            Toast.makeText(SignUp.this, "Authentication failed for an unknown reason.", Toast.LENGTH_LONG).show();
-
+                            etEmail.requestFocus();
+                        } catch (Exception e) {
+                            // CASE: Other errors (Network, etc.)
+                            Toast.makeText(SignUp.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
                         }
                     }
                 });
     }
-    // Resets the colors when interacted
-    private class ResetBackgroundTextWatcher implements TextWatcher {
-        private final EditText editTextToWatch;
+
+    /**
+     * Custom TextWatcher that resets the EditText UI state when the user types.
+     */
+    private static class ResetBackgroundTextWatcher implements TextWatcher {
+        private final EditText editText;
 
         public ResetBackgroundTextWatcher(EditText editText) {
-            this.editTextToWatch = editText;
+            this.editText = editText;
         }
 
         @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) { /* Not used but must be implemented for TextWatcher */ }
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 
         @Override
         public void onTextChanged(CharSequence s, int start, int before, int count) {
-            editTextToWatch.setBackgroundColor(Color.TRANSPARENT); // Reset the specific EditText's color
+            // When user types, clear error message and red background
+            editText.setBackgroundColor(Color.TRANSPARENT);
+            editText.setError(null);
         }
 
         @Override
-        public void afterTextChanged(Editable s) { /* Not used but must be implemented for TextWatcher */ }
+        public void afterTextChanged(Editable s) {}
     }
-
-
 }
