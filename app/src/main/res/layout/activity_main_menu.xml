@@ -13,10 +13,19 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="104dp"
         android:layout_marginTop="188dp"
+        android:clickable="true"
         android:src="@drawable/mahoraga"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:clickable="true"
-        />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/btnToTheGame"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="To The Game"
+        android:layout_marginStart="137dp"
+        android:layout_marginTop="120dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/bLogOut" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

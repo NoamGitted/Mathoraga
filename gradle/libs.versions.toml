@@ -1,4 +1,7 @@
 [versions]
+generativeai = "0.9.0"
+gson = "2.10.1"
+guava = "31.1-android"
 agp = "8.7.2"
 firebaseBom = "34.2.0"
 junit = "4.13.2"
@@ -10,6 +13,9 @@ activity = "1.9.3"
 constraintlayout = "2.1.4"
 
 [libraries]
+google-generativeai = { group = "com.google.ai.client.generativeai", name = "generativeai", version.ref = "generativeai" }
+gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 firebase-auth = { module = "com.google.firebase:firebase-auth" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebaseBom" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }

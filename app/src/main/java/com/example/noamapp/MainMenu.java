@@ -48,6 +48,11 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
             startActivity(backToSplash);
             finish();
         }
+        if (id == R.id.btnToTheGame){
+            Intent toTheGame = new Intent(MainMenu.this, com.example.noamapp.Game_Page.class);
+            startActivity(toTheGame);
+            finish();
+        }
 
     }
 }

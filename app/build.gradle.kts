@@ -43,6 +43,8 @@ dependencies {
     androidTestImplementation(libs.espresso.core)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
-
+    implementation(libs.google.generativeai)
+    implementation(libs.gson)
+    implementation(libs.guava)
 
 }
