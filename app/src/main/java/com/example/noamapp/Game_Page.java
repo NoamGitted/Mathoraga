@@ -7,6 +7,21 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.google.firebase.ai.FirebaseAI;
+import com.google.firebase.ai.GenerativeModel;
+import com.google.firebase.ai.GenerativeBackend;
+import com.google.firebase.ai.Content;
+import com.google.firebase.ai.GenerateContentResponse;
+import com.google.firebase.ai.GenerationConfig;
+
+// THE JAVA WRAPPER (This is the one that was likely causing the most trouble)
+import com.google.firebase.ai.java.GenerativeModelFutures;
+
+// SUPPORT LIBS
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.gson.Gson;
 
 public class Game_Page extends AppCompatActivity {
 
@@ -20,5 +35,14 @@ public class Game_Page extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        //here I put the setupGemini
+    }
+    //here I put the fetchNewQuestion
+    public static class MathQuestion {
+        public String question;
+        public String[] answers;
+        public int correctAnswerIndex;
+        public MathQuestion() {}
+
     }
 }

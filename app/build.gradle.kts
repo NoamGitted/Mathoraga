@@ -42,8 +42,9 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation(platform(libs.firebase.bom))
+    implementation("com.google.firebase:firebase-ai-java")
     implementation(libs.firebase.auth)
-    implementation(libs.google.generativeai)
+    implementation(libs.firebase.ai)
     implementation(libs.gson)
     implementation(libs.guava)
 
