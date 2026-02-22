@@ -9,10 +9,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import com.google.firebase.ai.FirebaseAI;
 import com.google.firebase.ai.GenerativeModel;
-import com.google.firebase.ai.GenerativeBackend;
-import com.google.firebase.ai.Content;
-import com.google.firebase.ai.GenerateContentResponse;
-import com.google.firebase.ai.GenerationConfig;
+import com.google.firebase.ai.*;
 
 // THE JAVA WRAPPER (This is the one that was likely causing the most trouble)
 import com.google.firebase.ai.java.GenerativeModelFutures;
