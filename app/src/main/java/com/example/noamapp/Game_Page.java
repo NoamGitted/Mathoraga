@@ -1,9 +1,11 @@
 package com.example.noamapp;
 
 import android.os.Bundle;
+import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -11,11 +13,16 @@ import com.google.firebase.ai.*;
 import com.google.firebase.ai.java.GenerativeModelFutures;
 import com.google.common.util.concurrent.*;
 import com.google.firebase.ai.type.Content;
+import com.google.firebase.ai.type.GenerateContentResponse;
 import com.google.firebase.ai.type.GenerationConfig;
 import com.google.firebase.ai.type.GenerativeBackend;
+import com.google.firebase.ai.type.RequestOptions;
+import com.google.firebase.ai.type.Schema;
 import com.google.gson.Gson;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class Game_Page extends AppCompatActivity {
     private GenerativeModelFutures modelFutures;
@@ -29,33 +36,81 @@ public class Game_Page extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-        //here I put the setupGemini
+        setupGemini();
     }
     private void setupGemini() {
-        // 1. The Persona
-        Content systemInstruction = new Content.Builder()
-                .addText("You are a high school math teacher. Response must be JSON.")
-                .build();
+        // 1. The Schema (The structure/mold)
+        Schema mathSchema = Schema.obj(
+                Map.of(
+                        "question", Schema.str(),
+                        "answers", Schema.array(Schema.str()),
+                        "correctAnswerIndex", Schema.numInt()
+                ),
+                List.of("question", "answers", "correctAnswerIndex")
+        );
 
-        // 2. The Technical Rules
+        // 2. Technical Rules (MimeType & Schema)
         GenerationConfig config = new GenerationConfig.Builder()
                 .setResponseMimeType("application/json")
-                .setTemperature(0.7f)
+                .setResponseSchema(mathSchema)
+                .setTemperature(0.1f)
                 .build();
 
-        // 3. THE FIX: The Java GenerativeModel Builder
-        // This removes all slot-guessing.
-        GenerativeModel model = new GenerativeModel.Builder()
-                .setModelName("gemini-3-flash-preview")
-                .setBackend(GenerativeBackend.googleAI())
-                .setGenerationConfig(config)
-                .setSystemInstruction(systemInstruction) // Java now knows this is Content
-                .build();
+        // 3. THE 3-ARGUMENT CALL (Matches your IDE perfectly)
+        GenerativeModel ai = FirebaseAI.getInstance(GenerativeBackend.googleAI())
+                .generativeModel(
+                        "gemini-3-flash-preview",
+                        config,
+                        null // SafetySettings (expects List, null is allowed)
+                );
 
-        // 4. The Java Compatibility Wrapper
-        modelFutures = GenerativeModelFutures.from(model);
+        modelFutures = GenerativeModelFutures.from(ai);
     }
-    //here I put the fetchNewQuestion
+
+    private void fetchNewQuestion() {
+        // 1. The Prompt (Including the Persona since it's not in our constructor)
+        Content prompt = new Content.Builder()
+                // The Identity + The Task
+                .addText("You are a high school math teacher. Generate a new math question.")
+                .build();
+        // 2. The Request
+        ListenableFuture<GenerateContentResponse> response = modelFutures.generateContent(prompt);
+
+        // 3. The Callback (The "Waiting" room)
+        Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
+            @Override
+            public void onSuccess(GenerateContentResponse result) {
+                String jsonOutput = result.getText();
+
+                // Turn the AI's text into your MathQuestion object
+                // Using Gson is the standard for this
+                Gson gson = new Gson();
+                MathQuestion questionObj = gson.fromJson(jsonOutput, MathQuestion.class);
+
+                // Update the UI (Must be on the Main Thread)
+                runOnUiThread(() -> {
+                    displayQuestion(questionObj);
+                });
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                Log.e("AI_ERROR", "Fetch failed: " + t.getMessage());
+            }
+        }, ContextCompat.getMainExecutor(this)); // Essential for Android thread safety
+    }
+
+    private void displayQuestion(MathQuestion mq) {
+        // Assuming you have these views defined in your layout
+        txtQuestion.setText(mq.question);
+        btnOpt1.setText(mq.answers[0]);
+        btnOpt2.setText(mq.answers[1]);
+        btnOpt3.setText(mq.answers[2]);
+        btnOpt4.setText(mq.answers[3]);
+
+        // Save the correct index to a variable in your activity
+        this.correctAnswerIndex = mq.correctAnswerIndex;
+    }
     public static class MathQuestion {
         public String question;
         public String[] answers;
