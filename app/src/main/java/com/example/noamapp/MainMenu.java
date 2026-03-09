@@ -19,6 +19,7 @@ import com.google.firebase.auth.FirebaseUser;
 public class MainMenu extends AppCompatActivity implements View.OnClickListener {
     private FirebaseAuth mAuth;
     ImageView bLogOut;
+    Button btnToTheGame;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,7 +36,8 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
 
         bLogOut = findViewById(R.id.bLogOut);
         bLogOut.setOnClickListener(this);
-
+btnToTheGame = findViewById(R.id.btnToTheGame);
+btnToTheGame.setOnClickListener(this);
         }
 
 

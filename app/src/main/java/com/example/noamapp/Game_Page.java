@@ -2,6 +2,10 @@ package com.example.noamapp;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,8 +28,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Game_Page extends AppCompatActivity {
-    private GenerativeModelFutures modelFutures;
+public class Game_Page extends AppCompatActivity implements View.OnClickListener {
+    private GenerativeModelFutures model;
+    private static final String TAG = "Noam";
+    private int correctAnswerIndex;
+    private TextView txtQuestion;
+    private Button btnOpt1;
+    private Button btnOpt2;
+    private Button btnOpt3;
+    private Button btnOpt4;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,6 +48,52 @@ public class Game_Page extends AppCompatActivity {
             return insets;
         });
         setupGemini();
+        txtQuestion = findViewById(R.id.tvquestion);
+        btnOpt1 = findViewById(R.id.btnanswer1);
+        btnOpt2 = findViewById(R.id.btnanswer2);
+        btnOpt3 = findViewById(R.id.btnanswer3);
+        btnOpt4 = findViewById(R.id.btnanswer4);
+        fetchNewQuestion();
+        btnOpt1.setOnClickListener(this);
+        btnOpt2.setOnClickListener(this);
+        btnOpt3.setOnClickListener(this);
+        btnOpt4.setOnClickListener(this);
+    }
+    public void onClick(View v) {
+    int id = v.getId();
+    if(id == R.id.btnanswer1){
+        if (correctAnswerIndex == 0){
+            Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
+        }
+        else {
+            Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
+        }
+    }
+        if(id == R.id.btnanswer2){
+            if (correctAnswerIndex == 1){
+                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
+            }
+            else {
+                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
+            }
+        }
+        if(id == R.id.btnanswer3){
+            if (correctAnswerIndex == 2){
+                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
+            }
+            else {
+                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
+            }
+        }
+        if(id == R.id.btnanswer4){
+            if (correctAnswerIndex == 3){
+                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
+            }
+            else {
+                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
+            }
+        }
+
     }
     private void setupGemini() {
         // 1. The Schema (The structure/mold)
@@ -64,7 +121,8 @@ public class Game_Page extends AppCompatActivity {
                         null // SafetySettings (expects List, null is allowed)
                 );
 
-        modelFutures = GenerativeModelFutures.from(ai);
+        model = GenerativeModelFutures.from(ai);
+
     }
 
     private void fetchNewQuestion() {
@@ -74,14 +132,14 @@ public class Game_Page extends AppCompatActivity {
                 .addText("You are a high school math teacher. Generate a new math question.")
                 .build();
         // 2. The Request
-        ListenableFuture<GenerateContentResponse> response = modelFutures.generateContent(prompt);
+        ListenableFuture<GenerateContentResponse> response = model.generateContent(prompt);
 
         // 3. The Callback (The "Waiting" room)
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
             @Override
             public void onSuccess(GenerateContentResponse result) {
                 String jsonOutput = result.getText();
-
+                System.out.println(jsonOutput);
                 // Turn the AI's text into your MathQuestion object
                 // Using Gson is the standard for this
                 Gson gson = new Gson();
