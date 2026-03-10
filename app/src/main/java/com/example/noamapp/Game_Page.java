@@ -110,7 +110,7 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
         GenerationConfig config = new GenerationConfig.Builder()
                 .setResponseMimeType("application/json")
                 .setResponseSchema(mathSchema)
-                .setTemperature(0.1f)
+                .setTemperature(1f)
                 .build();
 
         // 3. THE 3-ARGUMENT CALL (Matches your IDE perfectly)
@@ -134,12 +134,13 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
         // 2. The Request
         ListenableFuture<GenerateContentResponse> response = model.generateContent(prompt);
 
+
         // 3. The Callback (The "Waiting" room)
         Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
             @Override
             public void onSuccess(GenerateContentResponse result) {
                 String jsonOutput = result.getText();
-                System.out.println(jsonOutput);
+                
                 // Turn the AI's text into your MathQuestion object
                 // Using Gson is the standard for this
                 Gson gson = new Gson();

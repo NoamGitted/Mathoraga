@@ -17,16 +17,24 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException;
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException;
 import com.google.firebase.auth.FirebaseAuthUserCollisionException;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
     private FirebaseAuth mAuth;
+    private FirebaseFirestore dbz;
     private Button btnSubmit;
-    private EditText etEmail, etPassword;
+    private EditText etEmail, etPassword, etUserName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +50,12 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
 
         // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
-
+dbz = FirebaseFirestore.getInstance();
         // Initialize UI Elements
         btnSubmit = findViewById(R.id.btnSubmit);
-        etEmail = findViewById(R.id.username); // Ensure IDs match your XML
+        etEmail = findViewById(R.id.gmail);
         etPassword = findViewById(R.id.password);
-
+        etUserName = findViewById(R.id.username);
         btnSubmit.setOnClickListener(this);
 
         // Attach listeners to reset the red background when user starts typing
@@ -87,9 +95,22 @@ public class SignUp extends AppCompatActivity implements View.OnClickListener {
                     if (task.isSuccessful()) {
                         // Success!
                         Toast.makeText(SignUp.this, "Account created successfully!", Toast.LENGTH_SHORT).show();
-                        Intent transferToMainMenu = new Intent(SignUp.this, com.example.noamapp.MainMenu.class);
-                        startActivity(transferToMainMenu);
-                        finish();
+
+                        Map<String, Object> user = new HashMap<>();
+                        user.put("username", etUserName.getText().toString());
+                        user.put("numberOfWins", 0);
+
+                        dbz.collection("user").document(mAuth.getUid()).set(user).addOnSuccessListener(workpls -> {
+                            Intent transferToMainMenu = new Intent(SignUp.this, com.example.noamapp.MainMenu.class);
+                            startActivity(transferToMainMenu);
+                            finish();
+                        }).addOnFailureListener(didntwork ->{
+                            mAuth.getCurrentUser().delete();
+                                }
+
+                                );
+
+
                     } else {
                         // Failure: Identify the specific registration error
                         try {
