@@ -2,24 +2,37 @@ package com.example.noamapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
 
 public class MainMenu extends AppCompatActivity implements View.OnClickListener {
     private FirebaseAuth mAuth;
+    private FirebaseFirestore dbz;
+    private static final String TAG = "Noam";
     ImageView bLogOut;
-    Button btnToTheGame;
+    Button btnHost, btnJoin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,11 +46,14 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
             return insets;
         });
         mAuth = FirebaseAuth.getInstance();
-
+        dbz = FirebaseFirestore.getInstance();
         bLogOut = findViewById(R.id.bLogOut);
         bLogOut.setOnClickListener(this);
-btnToTheGame = findViewById(R.id.btnToTheGame);
-btnToTheGame.setOnClickListener(this);
+    btnHost = findViewById(R.id.btnHost);
+    btnHost.setOnClickListener(this);
+
+    btnJoin = findViewById(R.id.btnJoin);
+    btnJoin.setOnClickListener(this);
         }
 
 
@@ -50,11 +66,59 @@ btnToTheGame.setOnClickListener(this);
             startActivity(backToSplash);
             finish();
         }
-        if (id == R.id.btnToTheGame){
-            Intent toTheGame = new Intent(MainMenu.this, com.example.noamapp.Game_Page.class);
-            startActivity(toTheGame);
-            finish();
+        if (id == R.id.btnHost){
+        String lobby = lobbyIDGenerator();
+        String uid = mAuth.getUid();
+
+            dbz.collection("users").document(uid).get().addOnSuccessListener(doc -> {
+                if (doc.exists()) {
+                    //Firestore maps the DB fields directly to User class
+                    User currentUser = doc.toObject(User.class);
+                    Log.d(TAG,currentUser.getUsername());
+
+                    if (currentUser != null) {
+                        createLobby(currentUser, uid);
+                    }
+                }
+            });
+
+
+        }
+        if(id == R.id.btnJoin){
+            int bye = 8/0;
         }
 
     }
+
+    private void createLobby(User user, String uid) {
+        String lobbyID = lobbyIDGenerator();
+
+        // Create the "Player" info for the lobby
+        // We only need username and points here, not the global wins
+        Map<String, Object> playerInLobby = new HashMap<>();
+        playerInLobby.put("username", user.username);
+        playerInLobby.put("currentPoints", 0);
+        playerInLobby.put("isHost", true);
+
+        dbz.collection("gameInstance")
+                .document(lobbyID)
+                .collection("players")
+                .document(uid)
+                .set(playerInLobby)
+                .addOnSuccessListener(aVoid -> {
+                    Intent intent = new Intent(MainMenu.this, Game_Page.class);
+                    intent.putExtra("LOBBY_ID", lobbyID);
+                    startActivity(intent);
+                });
+    }
+
+    public String lobbyIDGenerator(){
+        String lobby = "";
+        Random rng = new Random();
+        for (int i=0; i<6; i++) {
+            lobby += String.valueOf(rng.nextInt(10));
+        }
+        return lobby;
+    }
+
 }

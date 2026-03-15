@@ -100,7 +100,7 @@ dbz = FirebaseFirestore.getInstance();
                         user.put("username", etUserName.getText().toString());
                         user.put("numberOfWins", 0);
 
-                        dbz.collection("user").document(mAuth.getUid()).set(user).addOnSuccessListener(workpls -> {
+                        dbz.collection("users").document(mAuth.getUid()).set(user).addOnSuccessListener(workpls -> {
                             Intent transferToMainMenu = new Intent(SignUp.this, com.example.noamapp.MainMenu.class);
                             startActivity(transferToMainMenu);
                             finish();

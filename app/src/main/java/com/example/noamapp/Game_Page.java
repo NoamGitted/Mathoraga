@@ -22,6 +22,8 @@ import com.google.firebase.ai.type.GenerationConfig;
 import com.google.firebase.ai.type.GenerativeBackend;
 import com.google.firebase.ai.type.RequestOptions;
 import com.google.firebase.ai.type.Schema;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.gson.Gson;
 
 import java.util.Collections;
@@ -30,6 +32,8 @@ import java.util.Map;
 
 public class Game_Page extends AppCompatActivity implements View.OnClickListener {
     private GenerativeModelFutures model;
+    private FirebaseAuth mAuth;
+    private FirebaseFirestore dbz;
     private static final String TAG = "Noam";
     private int correctAnswerIndex;
     private TextView txtQuestion;
