@@ -1,6 +1,8 @@
 package com.example.noamapp;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,16 +33,24 @@ import java.util.List;
 import java.util.Map;
 
 public class Game_Page extends AppCompatActivity implements View.OnClickListener {
+    //FireBase
     private GenerativeModelFutures model;
     private FirebaseAuth mAuth;
     private FirebaseFirestore dbz;
+
+    //Other...
     private static final String TAG = "Noam";
     private int correctAnswerIndex;
-    private TextView txtQuestion;
-    private Button btnOpt1;
-    private Button btnOpt2;
-    private Button btnOpt3;
-    private Button btnOpt4;
+    private String lobbyID, uID;
+
+    //XML
+    private TextView txtQuestion, txtTimer;
+    private Button btnOpt1, btnOpt2, btnOpt3, btnOpt4;
+
+    //Timer
+    private CountDownTimer questionTimer;
+    private long timeLeftInMillis;
+    private static final long TOTAL_TIME = 20000;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,53 +61,62 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        mAuth = FirebaseAuth.getInstance();
+        dbz = FirebaseFirestore.getInstance();
         setupGemini();
         txtQuestion = findViewById(R.id.tvquestion);
+        txtTimer = findViewById(R.id.txtTimer);
+        lobbyID = getIntent().getStringExtra("LOBBY_ID");
+        uID = mAuth.getUid();
         btnOpt1 = findViewById(R.id.btnanswer1);
         btnOpt2 = findViewById(R.id.btnanswer2);
         btnOpt3 = findViewById(R.id.btnanswer3);
         btnOpt4 = findViewById(R.id.btnanswer4);
         fetchNewQuestion();
+
         btnOpt1.setOnClickListener(this);
         btnOpt2.setOnClickListener(this);
         btnOpt3.setOnClickListener(this);
         btnOpt4.setOnClickListener(this);
     }
-    public void onClick(View v) {
-    int id = v.getId();
-    if(id == R.id.btnanswer1){
-        if (correctAnswerIndex == 0){
-            Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
-        }
-        else {
-            Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
+    protected void onDestroy() {
+        super.onDestroy();
+        // Stop the timer so it doesn't keep running in the background
+        if (questionTimer != null) {
+            questionTimer.cancel();
         }
     }
-        if(id == R.id.btnanswer2){
-            if (correctAnswerIndex == 1){
-                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
-            }
-            else {
-                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
-            }
-        }
-        if(id == R.id.btnanswer3){
-            if (correctAnswerIndex == 2){
-                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
-            }
-            else {
-                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
-            }
-        }
-        if(id == R.id.btnanswer4){
-            if (correctAnswerIndex == 3){
-                Toast.makeText(Game_Page.this, "True", Toast.LENGTH_LONG).show();
-            }
-            else {
-                Toast.makeText(Game_Page.this, "Nah", Toast.LENGTH_LONG).show();
-            }
+
+    public void onClick(View v) {
+        // 1. Stop the timer immediately to "freeze" the time
+        if (questionTimer != null) {
+            questionTimer.cancel();
         }
 
+        // 2. Calculate points using the current value of timeLeftInMillis
+        // Example: Base 100 points + 10 points for every second left
+        int secondsLeft = (int) (timeLeftInMillis / 1000);
+        int scoreForThisRound = 100 + (secondsLeft * 10);
+
+        // 3. Check if answer is correct
+        int id = v.getId();
+        int selectedIndex = -1;
+
+        if (id == R.id.btnanswer1) selectedIndex = 0;
+        else if (id == R.id.btnanswer2) selectedIndex = 1;
+        else if (id == R.id.btnanswer3) selectedIndex = 2;
+        else if (id == R.id.btnanswer4) selectedIndex = 3;
+
+        if (selectedIndex == correctAnswerIndex) {
+            Toast.makeText(this, "Correct! +" + scoreForThisRound, Toast.LENGTH_SHORT).show();
+            updateInGamePoints(scoreForThisRound);
+            btnEnabler(false);
+
+        } else {
+            Toast.makeText(this, "Wrong!", Toast.LENGTH_SHORT).show();
+            fetchNewQuestion();
+            btnEnabler(false);
+        }
     }
     private void setupGemini() {
         // 1. The Schema (The structure/mold)
@@ -154,6 +173,7 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
                 runOnUiThread(() -> {
                     displayQuestion(questionObj);
                 });
+
             }
 
             @Override
@@ -170,9 +190,10 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
         btnOpt2.setText(mq.answers[1]);
         btnOpt3.setText(mq.answers[2]);
         btnOpt4.setText(mq.answers[3]);
-
         // Save the correct index to a variable in your activity
         this.correctAnswerIndex = mq.correctAnswerIndex;
+        startTimer();
+        btnEnabler(true);
     }
     public static class MathQuestion {
         public String question;
@@ -180,5 +201,65 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
         public int correctAnswerIndex;
         public MathQuestion() {}
 
+    }
+
+    private void startTimer() {
+        Log.d(TAG, "Timer started!"); // Check Logcat for this!
+        if (questionTimer != null) {
+            questionTimer.cancel(); // Stop any existing timer
+        }
+
+        questionTimer = new CountDownTimer(TOTAL_TIME, 1000) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                timeLeftInMillis = millisUntilFinished;
+                int seconds = (int) (millisUntilFinished / 1000);
+                // Update a TextView so the user sees the countdown
+                txtTimer.setText(String.valueOf(seconds));
+                if (seconds <= 5) {
+                    txtTimer.setTextColor(Color.RED);
+                    txtTimer.setTextSize(24); // Make it pop
+                } else {
+                    txtTimer.setTextColor(Color.BLACK);
+                    txtTimer.setTextSize(18);
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                txtTimer.setText("0");
+                // Logic for when time runs out (e.g., auto-fetch next question)
+                Toast.makeText(Game_Page.this, "Time's up!", Toast.LENGTH_SHORT).show();
+                fetchNewQuestion();
+            }
+        }.start();
+    }
+
+    private void updateInGamePoints(int pointsToAdd) {
+
+        if (lobbyID != null && uID != null) {
+            // Path: gameInstance -> {lobbyID} -> players -> {uid}
+            dbz.collection("gameInstance")
+                    .document(lobbyID)
+                    .collection("players")
+                    .document(uID)
+                    .update("currentPoints", com.google.firebase.firestore.FieldValue.increment(pointsToAdd))
+                    .addOnSuccessListener(aVoid -> {
+                        Log.d("NOAM_APP", "Points updated in DB!");
+                        // After updating points, wait a moment or show the leaderboard,
+                        // then fetch the next question.
+                        fetchNewQuestion();
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("NOAM_APP", "Failed to update points", e);
+                    });
+        }
+    }
+
+    private void btnEnabler(boolean q){
+        btnOpt1.setEnabled(q);
+        btnOpt2.setEnabled(q);
+        btnOpt3.setEnabled(q);
+        btnOpt4.setEnabled(q);
     }
 }
