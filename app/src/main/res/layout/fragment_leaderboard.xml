@@ -41,5 +41,15 @@
         android:textColor="#FFFFFF"
         android:textStyle="bold"
         android:visibility="gone" />
+    <Button
+        android:id="@+id/btn_end"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="#FF2400"
+        android:text="END GAME"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:visibility="gone"/>
 
 </LinearLayout>

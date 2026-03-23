@@ -7,6 +7,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -31,8 +33,12 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
     private FirebaseAuth mAuth;
     private FirebaseFirestore dbz;
     private static final String TAG = "Noam";
+
+   private User cUser;
     ImageView bLogOut;
+    TextView tVNumberOfWins;
     Button btnHost, btnJoin;
+    EditText etLobbyId, etNumberOfRounds;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,13 +53,16 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
         });
         mAuth = FirebaseAuth.getInstance();
         dbz = FirebaseFirestore.getInstance();
+        etLobbyId = findViewById(R.id.etLobbyId);
+        etNumberOfRounds = findViewById(R.id.etNumberOfRounds);
         bLogOut = findViewById(R.id.bLogOut);
         bLogOut.setOnClickListener(this);
     btnHost = findViewById(R.id.btnHost);
     btnHost.setOnClickListener(this);
-
+    tVNumberOfWins = findViewById(R.id.tVNumberOfWins);
     btnJoin = findViewById(R.id.btnJoin);
     btnJoin.setOnClickListener(this);
+    fetchUserData(mAuth.getUid());
         }
 
 
@@ -68,30 +77,30 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
         }
         if (id == R.id.btnHost){
         String lobby = lobbyIDGenerator();
-        String uid = mAuth.getUid();
-
-            dbz.collection("users").document(uid).get().addOnSuccessListener(doc -> {
-                if (doc.exists()) {
-                    //Firestore maps the DB fields directly to User class
-                    User currentUser = doc.toObject(User.class);
-                    Log.d(TAG,currentUser.getUsername());
-
-                    if (currentUser != null) {
-                        createLobby(currentUser, uid);
-                    }
-                }
-            });
-
+        createLobby(cUser, mAuth.getUid());
 
         }
         if(id == R.id.btnJoin){
-            int bye = 8/0;
+            joinLobby(cUser, mAuth.getUid());
         }
 
     }
 
     private void createLobby(User user, String uid) {
         String lobbyID = lobbyIDGenerator();
+        String input = etNumberOfRounds.getText().toString().trim();
+        int rounds;
+
+        if (input.isEmpty()) {
+            rounds = 5; // Set a default if they forgot
+        } else {
+            try {
+                rounds = Integer.parseInt(input);
+                if (rounds < 1) rounds = 1;
+            } catch (NumberFormatException e) {
+                rounds = 5; // Backup default if they typed something weird like "abc"
+            }
+        }
 
         // 1. Create the Main Lobby Document data
         Map<String, Object> lobbyData = new HashMap<>();
@@ -99,7 +108,7 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
         lobbyData.put("currentTheme", "General Math"); // Initial theme
         lobbyData.put("inRound", false); // Start in "Waiting/Leaderboard" mode
         lobbyData.put("lobbyID", lobbyID);
-
+        lobbyData.put("roundsLeft", rounds);
         // 2. Create the Host Player data
         Map<String, Object> playerInLobby = new HashMap<>();
         playerInLobby.put("username", user.username);
@@ -137,5 +146,75 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
         }
         return lobby;
     }
+    private void joinLobby(User user, String uid) {
+        String inputLobbyID = etLobbyId.getText().toString().trim();
 
+        if (inputLobbyID.isEmpty()) {
+            Toast.makeText(this, "Please enter a Lobby ID", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // 1. Check if the Lobby Document exists
+        dbz.collection("gameInstance").document(inputLobbyID).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // 2. Check if the user is already in the players sub-collection
+                        checkUserInLobby(inputLobbyID, user, uid);
+                    } else {
+                        Toast.makeText(this, "Lobby not found!", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> Log.e("JOIN", "Error finding lobby", e));
+    }
+
+    private void checkUserInLobby(String lobbyID, User user, String uid) {
+        dbz.collection("gameInstance").document(lobbyID)
+                .collection("players").document(uid).get()
+                .addOnSuccessListener(snapshot -> {
+                    if (snapshot.exists()) {
+                        // User is already here! Just move to the Game Page (Reconnection logic)
+                        moveToGame(lobbyID);
+                    } else {
+                        // 3. New Player: Add them to the lobby
+                        addNewPlayerToLobby(lobbyID, user, uid);
+                    }
+                });
+    }
+
+    private void addNewPlayerToLobby(String lobbyID, User user, String uid) {
+        Map<String, Object> playerData = new HashMap<>();
+        playerData.put("username", user.username);
+        playerData.put("currentPoints", 0);
+        playerData.put("isHost", false); // Joiners are never hosts
+        playerData.put("isReady", false);
+        playerData.put("uID", uid);
+
+        dbz.collection("gameInstance").document(lobbyID)
+                .collection("players").document(uid)
+                .set(playerData)
+                .addOnSuccessListener(aVoid -> {
+                    moveToGame(lobbyID);
+                })
+                .addOnFailureListener(e -> Toast.makeText(this, "Failed to join", Toast.LENGTH_SHORT).show());
+    }
+
+    private void moveToGame(String lobbyID) {
+        Intent intent = new Intent(MainMenu.this, Game_Page.class);
+        intent.putExtra("LOBBY_ID", lobbyID);
+        startActivity(intent);
+    }
+
+    private void fetchUserData(String uid) {
+        dbz.collection("users").document(uid).get()
+                .addOnSuccessListener(documentSnapshot -> {
+                    if (documentSnapshot.exists()) {
+                        // THE COMMAND YOU ASKED FOR:
+                        this.cUser = documentSnapshot.toObject(User.class);
+                        tVNumberOfWins.setText("Number of wins: " + cUser.getNumberOfWins());
+                        btnHost.setEnabled(true);
+                        btnJoin.setEnabled(true);
+                        Log.d("AUTH", "Welcome, " + cUser.username);
+                    }
+                });
+    }
 }

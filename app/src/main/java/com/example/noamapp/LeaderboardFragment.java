@@ -1,4 +1,5 @@
 package com.example.noamapp;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -6,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -35,7 +37,7 @@ public class LeaderboardFragment extends Fragment {
     private TextView txtlobbyID;
     private RecyclerView recyclerView;
     private LeaderboardAdapter adapter;
-    private Button btnNextRound;
+    private Button btnNextRound, btnEnd;
 
     public LeaderboardFragment() {
     }
@@ -59,6 +61,7 @@ public class LeaderboardFragment extends Fragment {
                         }
                     });
         }
+
     }
 
     @Override
@@ -72,6 +75,7 @@ public class LeaderboardFragment extends Fragment {
         btnNextRound = view.findViewById(R.id.btn_next_round);
         txtlobbyID = view.findViewById(R.id.txtlobbyID);
         txtlobbyID.setText(lobbyID);
+        btnEnd = view.findViewById(R.id.btn_end);
         // Set up the RecyclerView's "shape" (Vertical List)
         adapter = new LeaderboardAdapter(playerList);
         recyclerView.setAdapter(adapter);
@@ -81,8 +85,40 @@ public class LeaderboardFragment extends Fragment {
 
         btnNextRound.setOnClickListener(v -> {
             // 1. Tell Firestore to move the game to the next state
-            // We will set 'gameState' to 'QUESTION' and 'isReady' for all players to 'false'
+            //set 'inRound' to 'false' and 'isReady' for all players to 'false'
             resetPlayersForNextRound();
+        });
+
+        btnEnd.setOnClickListener(v -> {
+            if (playerList == null || playerList.isEmpty()) return;
+
+            // 1. Identify the Winner (Index 0 is the highest score)
+            Player winner = playerList.get(0);
+
+            // 2. The Final Transaction: Update the Winner's Permanent Profile
+            dbz.collection("users").document(winner.getuID())
+                    .update("numberOfWins", com.google.firebase.firestore.FieldValue.increment(1))
+                    .addOnSuccessListener(aVoid -> {
+
+                        // 3. Cleanup: Delete the Lobby Document
+                        // This triggers the 'SnapshotListener' on everyone else's phone to kick them out
+                        dbz.collection("gameInstance").document(lobbyID).delete()
+                                .addOnSuccessListener(deleted -> {
+                                    // 4. Exit: Close the Activity for the Host
+                                    if (getActivity() != null) {
+                                        // Create Intent to go back to MainMenu
+                                        Intent intent = new Intent(getActivity(), MainMenu.class);
+                                        // Clear the stack so this new MainMenu is the only thing open
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+
+                                        getActivity().finish(); // Close the current Game_Page
+                                    }
+                                });
+                    })
+                    .addOnFailureListener(e -> {
+                        Log.e("Fail","Failed to save the win!");
+                    });
         });
 
         return view;
@@ -106,54 +142,58 @@ public class LeaderboardFragment extends Fragment {
     }
 
     private void checkEveryoneReady(List<Player> players) {
-        // 1. Start by assuming everyone IS ready
-        boolean allReady = true;
+        dbz.collection("gameInstance").document(lobbyID).get().addOnSuccessListener(snapshot -> {
+            if (snapshot != null && snapshot.exists()) {
+                // 1. Get the round count
+                Long roundsLeft = snapshot.getLong("roundsLeft");
 
-        // 2. Loop through every player in the list
-        for (Player p : players) {
-            // If even ONE person has isReady == false, the whole group isn't ready
-            if (!p.isReady()) {
-                allReady = false;
-                break; // Stop looking, we found someone not ready
+                // 2. Update the UI text
+                txtlobbyID.setText("Lobby: " + lobbyID + " | Rounds Left: " + roundsLeft);
+
+                // 3. Perform the "Ready" loop
+                boolean allReady = true;
+                for (Player p : players) {
+                    if (!p.isReady()) {
+                        allReady = false;
+                        break;
+                    }
+                }
+
+                // 4. Handle Button Visibility
+                if (allReady && isHost) {
+                    if (roundsLeft != null && roundsLeft <= 0) {
+                        btnNextRound.setVisibility(View.GONE);
+                        btnEnd.setVisibility(View.VISIBLE);
+                    } else {
+                        btnNextRound.setVisibility(View.VISIBLE);
+                        btnEnd.setVisibility(View.GONE);
+                    }
+                }
             }
-        }
-Log.d("Noam","allReady= " + allReady);
-        // 3. Update the button visibility
-        // Only show the "Next Round" button if ALL are ready AND this user is the Host
-        if (allReady && isHost) {
-            btnNextRound.setVisibility(View.VISIBLE);
-            Log.d("Noam", "The button should be visible");
-            dbz.collection("gameInstance").document(lobbyID)
-                    .update("inRound", false);
-        } else {
-            // Hide it if someone is still answering or if you aren't the host
-            btnNextRound.setVisibility(View.GONE);
-        }
+        });
     }
     private void resetPlayersForNextRound() {
         WriteBatch batch = dbz.batch();
 
-        // Reset every player's "ready" status so they can answer the next question
+        // 1. Reset every player's "ready" status
         for (Player p : playerList) {
             DocumentReference pRef = dbz.collection("gameInstance").document(lobbyID)
                     .collection("players").document(p.getuID());
             batch.update(pRef, "isReady", false);
         }
 
+        // 2. Pick a random theme
         String[] themes = {"Quadratic Equations", "Percentages", "Geometry", "Fractions", "Algebra"};
+        String chosenTheme = themes[new Random().nextInt(themes.length)];
 
-// 2. Pick a random index
-        int randomIndex = new Random().nextInt(themes.length);
-        String chosenTheme = themes[randomIndex];
-
-
-        // Update the main game state to trigger the screen switch for everyone
+        // 3. UPDATE THE LOBBY
         DocumentReference gameRef = dbz.collection("gameInstance").document(lobbyID);
         batch.update(gameRef, "currentTheme", chosenTheme);
         batch.update(gameRef, "inRound", true);
+        batch.update(gameRef, "roundsLeft", com.google.firebase.firestore.FieldValue.increment(-1));
 
         batch.commit().addOnSuccessListener(aVoid -> {
-            Log.d("GAME", "Next round started!");
+            Log.d("GAME", "Next round started and roundsLeft decreased!");
         });
     }
 
@@ -161,22 +201,39 @@ Log.d("Noam","allReady= " + allReady);
     private void setupStateListener() {
         dbz.collection("gameInstance").document(lobbyID)
                 .addSnapshotListener((snapshot, e) -> {
-                    if (snapshot != null && snapshot.exists()) {
-                        Boolean inRound = snapshot.getBoolean("inRound");
+                    if (e != null) {
+                        Log.e("LOBBY", "Listen failed.", e);
+                        return;
+                    }
 
-                        // If the Host flipped the switch to true...
-                        if (inRound != null && inRound) {
+                    // --- THE KICK LOGIC ---
+                    // If the document is null or doesn't exist, the Host has deleted it
+                    if (snapshot == null || !snapshot.exists()) {
+                        if (getActivity() != null) {
+                            Toast.makeText(getContext(), "Game has ended!", Toast.LENGTH_SHORT).show();
 
-                            // 1. Tell the Activity to show the pre-loaded question
-                            if (getActivity() instanceof Game_Page) {
-                                ((Game_Page) getActivity()).startNewRoundUI();
-                            }
+                            // Create Intent to go back to MainMenu
+                            Intent intent = new Intent(getActivity(), MainMenu.class);
+                            // Clear the stack so this new MainMenu is the only thing open
+                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                            startActivity(intent);
 
-                            // 2. Remove THIS fragment from the screen
-                            getParentFragmentManager().beginTransaction()
-                                    .remove(this)
-                                    .commit();
+                            getActivity().finish(); // Close the current Game_Page
                         }
+                        return; // Exit the listener early
+                    }
+
+                    // --- ROUND LOGIC ---
+                    Boolean inRound = snapshot.getBoolean("inRound");
+
+                    if (inRound != null && inRound) {
+                        if (getActivity() instanceof Game_Page) {
+                            ((Game_Page) getActivity()).startNewRoundUI();
+                        }
+
+                        getParentFragmentManager().beginTransaction()
+                                .remove(this)
+                                .commit();
                     }
                 });
     }

@@ -10,7 +10,9 @@
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        tools:layout_editor_absoluteX="0dp"
+        tools:layout_editor_absoluteY="86dp" />
 
     <TextView
         android:id="@+id/txtStartTimer"
@@ -28,12 +30,13 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="124dp"
         android:text="Waiting For Question..."
-        android:textSize="50sp"
+        android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/btnanswer1"
+        android:backgroundTint="#32CD32"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -43,6 +46,7 @@
 
     <Button
         android:id="@+id/btnanswer2"
+        android:backgroundTint="#EE4B2B"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="225dp"
@@ -52,6 +56,7 @@
 
     <Button
         android:id="@+id/btnanswer3"
+        android:backgroundTint="#000080"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -61,6 +66,7 @@
 
     <Button
         android:id="@+id/btnanswer4"
+        android:backgroundTint="#FFD700"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="225dp"

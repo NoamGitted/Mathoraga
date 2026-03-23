@@ -114,29 +114,13 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
         else if (id == R.id.btnanswer4) selectedIndex = 3;
 
         if (selectedIndex == correctAnswerIndex) {
-            Toast.makeText(this, "Correct! +" + scoreForThisRound, Toast.LENGTH_SHORT).show();
-            questionAreaEnabler(false);
-            updateInGamePoints(scoreForThisRound);
+            stopTimer();
+           checkRoundsAndNavigate("correctAnswer", scoreForThisRound);
 
         }
         else {
-            Toast.makeText(this, "Wrong!", Toast.LENGTH_SHORT).show();
-            questionAreaEnabler(false);
-            if (userLevel > 1) userLevel--;
             stopTimer();
-            showLeaderboard();
-            dbz.collection("gameInstance").document(lobbyID).get()
-                    .addOnSuccessListener(documentSnapshot -> {
-                        if (documentSnapshot.exists()) {
-                            // THE LINE YOU NEED:
-                            String theme = documentSnapshot.getString("currentTheme");
-
-                            // Safety check: if the field is missing, use a default
-                            if (theme == null) theme = "General Math";
-                            fetchNewQuestion("The player missed a Level " + userLevel + " " + theme + " question. Generate a new one at the same difficulty for practice.");
-                        }
-
-                    });
+            checkRoundsAndNavigate("wrongAnswer",0);
 
         }
     }
@@ -252,22 +236,8 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
             public void onFinish() {
                 txtTimer.setText("0");
                 // Logic for when time runs out (e.g., auto-fetch next question)
-                Toast.makeText(Game_Page.this, "Time's up!", Toast.LENGTH_SHORT).show();
-                showLeaderboard();
-                btnEnabler(false);
-                questionAreaEnabler(false);
-                dbz.collection("gameInstance").document(lobbyID).get()
-                        .addOnSuccessListener(documentSnapshot -> {
-                            if (documentSnapshot.exists()) {
-                                // THE LINE YOU NEED:
-                                String theme = documentSnapshot.getString("currentTheme");
+                checkRoundsAndNavigate("ranOutOfTime",0);
 
-                                // Safety check: if the field is missing, use a default
-                                if (theme == null) theme = "General Math";
-                                fetchNewQuestion("Time ran out on Level " + userLevel + " " + theme + ". Generate a fresh question of the same type and difficulty.");
-                            }
-
-                        });
 
 
             }
@@ -291,18 +261,7 @@ public class Game_Page extends AppCompatActivity implements View.OnClickListener
                     .update("currentPoints", com.google.firebase.firestore.FieldValue.increment(pointsToAdd))
                     .addOnSuccessListener(aVoid -> {
                         Log.d("NOAM_APP", "Points updated in DB!");
-                        userLevel++;
-                        stopTimer();
-                        dbz.collection("gameInstance").document(lobbyID).get()
-                                .addOnSuccessListener(documentSnapshot -> {
-                                    if (documentSnapshot.exists()) {
-                                        // THE LINE YOU NEED:
-                                        String theme = documentSnapshot.getString("currentTheme");
 
-                                        // Safety check: if the field is missing, use a default
-                                        if (theme == null) theme = "General Math";
-fetchNewQuestion("Generate a " + theme + " math question for Level " + userLevel + ". The player is doing well, so make it challenging!");                                    }
-                                });
                     })
                     .addOnFailureListener(e -> {
                         Log.e("NOAM_APP", "Failed to update points", e);
@@ -344,7 +303,6 @@ fetchNewQuestion("Generate a " + theme + " math question for Level " + userLevel
         // 3. Perform the swap
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, leaderboard)
-                .addToBackStack(null) // Allows the 'back' button to hide the leaderboard
                 .commit();
     }
     public void startNewRoundUI() {
@@ -385,5 +343,52 @@ fetchNewQuestion("Generate a " + theme + " math question for Level " + userLevel
                 }
             }
         }.start();
+    }
+
+    private void checkRoundsAndNavigate(String reason, int points) {
+        dbz.collection("gameInstance").document(lobbyID).get().addOnSuccessListener(snapshot -> {
+            if (!snapshot.exists()) return;
+
+            Long roundsLeft = snapshot.getLong("roundsLeft");
+            String theme = snapshot.getString("currentTheme");
+            if (theme == null) theme = "General Math";
+
+            // --- BRANCH 1: GAME IS OVER ---
+            if (roundsLeft != null && roundsLeft <= 0) {
+                stopTimer();
+                questionAreaEnabler(false);
+
+                // Update final points and set READY in one go
+                dbz.collection("gameInstance").document(lobbyID)
+                        .collection("players").document(uID)
+                        .update("currentPoints", com.google.firebase.firestore.FieldValue.increment(points),
+                                "isReady", true)
+                        .addOnSuccessListener(aVoid -> showLeaderboard());
+            }
+            // --- BRANCH 2: GAME CONTINUES ---
+            else {
+                if (reason.equals("correctAnswer")) {
+                    Toast.makeText(this, "Correct! +" + points, Toast.LENGTH_SHORT).show();
+                    userLevel++;
+                    fetchNewQuestion("Generate a " + theme + " math question for Level " + userLevel + ". The player is doing well, so make it challenging!");
+                    updateInGamePoints(points); // This method already calls fetchNewQuestion
+                }
+                else if (reason.equals("wrongAnswer")) {
+                    Toast.makeText(this, "Wrong!", Toast.LENGTH_SHORT).show();
+                    if (userLevel > 1) userLevel--;
+                    fetchNewQuestion("The player missed a Level " + userLevel + " " + theme + " question. Generate a new one.");
+                    showLeaderboard();
+                }
+                else if (reason.equals("ranOutOfTime")) {
+                    if (userLevel > 1) userLevel--;
+                    Toast.makeText(this, "Time's up!", Toast.LENGTH_SHORT).show();
+                    fetchNewQuestion("Time ran out on Level " + userLevel + " " + theme + ". Generate a fresh question.");
+                    showLeaderboard();
+                }
+
+                questionAreaEnabler(false);
+
+            }
+        });
     }
 }
