@@ -93,23 +93,40 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
     private void createLobby(User user, String uid) {
         String lobbyID = lobbyIDGenerator();
 
-        // Create the "Player" info for the lobby
-        // We only need username and points here, not the global wins
+        // 1. Create the Main Lobby Document data
+        Map<String, Object> lobbyData = new HashMap<>();
+        lobbyData.put("hostID", uid);
+        lobbyData.put("currentTheme", "General Math"); // Initial theme
+        lobbyData.put("inRound", false); // Start in "Waiting/Leaderboard" mode
+        lobbyData.put("lobbyID", lobbyID);
+
+        // 2. Create the Host Player data
         Map<String, Object> playerInLobby = new HashMap<>();
         playerInLobby.put("username", user.username);
         playerInLobby.put("currentPoints", 0);
         playerInLobby.put("isHost", true);
+        playerInLobby.put("isReady", false);
+        playerInLobby.put("uID", uid);
 
+        // 3. Write the Lobby Document first
         dbz.collection("gameInstance")
                 .document(lobbyID)
-                .collection("players")
-                .document(uid)
-                .set(playerInLobby)
+                .set(lobbyData)
                 .addOnSuccessListener(aVoid -> {
-                    Intent intent = new Intent(MainMenu.this, Game_Page.class);
-                    intent.putExtra("LOBBY_ID", lobbyID);
-                    startActivity(intent);
-                });
+                    // 4. Once Lobby exists, add the Host to the players sub-collection
+                    dbz.collection("gameInstance")
+                            .document(lobbyID)
+                            .collection("players")
+                            .document(uid)
+                            .set(playerInLobby)
+                            .addOnSuccessListener(aVoid2 -> {
+                                // 5. Success! Move to Game_Page
+                                Intent intent = new Intent(MainMenu.this, Game_Page.class);
+                                intent.putExtra("LOBBY_ID", lobbyID);
+                                startActivity(intent);
+                            });
+                })
+                .addOnFailureListener(e -> Log.e("LOBBY", "Failed to create lobby", e));
     }
 
     public String lobbyIDGenerator(){
