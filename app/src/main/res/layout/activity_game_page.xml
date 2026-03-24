@@ -5,84 +5,96 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:padding="16dp"
     tools:context=".Game_Page">
-
-    <FrameLayout
-        android:id="@+id/fragment_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="86dp" />
-
-    <TextView
-        android:id="@+id/txtStartTimer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="200dp"
-        android:layout_marginTop="300dp"
-        android:textSize="100sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
-        android:id="@+id/tvquestion"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="124dp"
-        android:text="Waiting For Question..."
-        android:textSize="20sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:id="@+id/btnanswer1"
-        android:backgroundTint="#32CD32"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="100dp"
-        android:layout_marginTop="50dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvquestion" />
-
-    <Button
-        android:id="@+id/btnanswer2"
-        android:backgroundTint="#EE4B2B"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="225dp"
-        android:layout_marginTop="50dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvquestion" />
-
-    <Button
-        android:id="@+id/btnanswer3"
-        android:backgroundTint="#000080"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="100dp"
-        android:layout_marginTop="175dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvquestion" />
-
-    <Button
-        android:id="@+id/btnanswer4"
-        android:backgroundTint="#FFD700"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="225dp"
-        android:layout_marginTop="175dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvquestion" />
 
     <TextView
         android:id="@+id/txtTimer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="44dp"
-        android:layout_marginTop="52dp"
-        android:textSize="25sp"
+        android:text="20"
+        android:textSize="28sp"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/tvquestion"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="64dp"
+        android:gravity="center"
+        android:text="Waiting For Question..."
+        android:textSize="24sp"
+        android:textStyle="italic"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/txtTimer" />
+
+    <Button
+        android:id="@+id/btnanswer1"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_margin="8dp"
+        android:backgroundTint="#32CD32"
+        app:layout_constraintEnd_toStartOf="@+id/btnanswer2"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvquestion"
+        app:layout_constraintVertical_bias="0.2"
+        app:layout_constraintBottom_toTopOf="@+id/btnanswer3"/>
+
+    <Button
+        android:id="@+id/btnanswer2"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_margin="8dp"
+        android:backgroundTint="#EE4B2B"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/btnanswer1"
+        app:layout_constraintTop_toTopOf="@+id/btnanswer1" />
+
+    <Button
+        android:id="@+id/btnanswer3"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_margin="8dp"
+        android:backgroundTint="#000080"
+        app:layout_constraintEnd_toStartOf="@+id/btnanswer4"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/btnanswer1" />
+
+    <Button
+        android:id="@+id/btnanswer4"
+        android:layout_width="0dp"
+        android:layout_height="80dp"
+        android:layout_margin="8dp"
+        android:backgroundTint="#FFD700"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/btnanswer3"
+        app:layout_constraintTop_toTopOf="@+id/btnanswer3" />
+
+    <TextView
+        android:id="@+id/txtStartTimer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="120sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="3"
+        tools:visibility="visible" />
+
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="10dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

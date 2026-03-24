@@ -96,7 +96,7 @@ public class MainMenu extends AppCompatActivity implements View.OnClickListener 
         } else {
             try {
                 rounds = Integer.parseInt(input);
-                if (rounds < 1) rounds = 1;
+                if (rounds < 1 || rounds >99) rounds = 1;
             } catch (NumberFormatException e) {
                 rounds = 5; // Backup default if they typed something weird like "abc"
             }

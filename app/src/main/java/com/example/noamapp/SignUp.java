@@ -61,6 +61,7 @@ dbz = FirebaseFirestore.getInstance();
         // Attach listeners to reset the red background when user starts typing
         etEmail.addTextChangedListener(new ResetBackgroundTextWatcher(etEmail));
         etPassword.addTextChangedListener(new ResetBackgroundTextWatcher(etPassword));
+        etUserName.addTextChangedListener(new ResetBackgroundTextWatcher(etUserName));
     }
 
     @Override
@@ -73,7 +74,7 @@ dbz = FirebaseFirestore.getInstance();
 
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString().trim();
-
+        String username = etUserName.getText().toString().trim();
         // 2. Client-side validation: Check for empty fields using TextUtils
         boolean hasError = false;
         if (TextUtils.isEmpty(email)) {
@@ -86,7 +87,11 @@ dbz = FirebaseFirestore.getInstance();
             etPassword.setBackgroundColor(Color.RED);
             hasError = true;
         }
-
+        if(TextUtils.isEmpty(username)){
+            etUserName.setError("Username is required.");
+            etUserName.setBackgroundColor(Color.RED);
+            hasError = true;
+        }
         if (hasError) return;
 
         // 3. Firebase Registration
@@ -97,7 +102,7 @@ dbz = FirebaseFirestore.getInstance();
                         Toast.makeText(SignUp.this, "Account created successfully!", Toast.LENGTH_SHORT).show();
 
                         Map<String, Object> user = new HashMap<>();
-                        user.put("username", etUserName.getText().toString());
+                        user.put("username", username);
                         user.put("numberOfWins", 0);
 
                         dbz.collection("users").document(mAuth.getUid()).set(user).addOnSuccessListener(workpls -> {

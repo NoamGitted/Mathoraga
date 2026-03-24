@@ -5,72 +5,76 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainMenu">
+    tools:context=".MainMenu"
+    android:padding="16dp">
 
     <ImageView
         android:id="@+id/bLogOut"
-        android:layout_width="77dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="164dp"
-        android:layout_marginTop="24dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:clickable="true"
-        android:src="@drawable/mahoraga"
+        android:focusable="true"
+        android:src="@drawable/leavingant"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
-    <Button
-        android:enabled="false"
-        android:id="@+id/btnHost"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="52dp"
-        android:layout_marginTop="84dp"
-        android:text="Host Game"
-        android:textSize="50dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/bLogOut" />
-
-    <EditText
-        android:id="@+id/etNumberOfRounds"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="92dp"
-        android:layout_marginTop="32dp"
-        android:hint="How many rounds"
-        android:textSize="25dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btnHost" />
 
     <TextView
         android:id="@+id/tVNumberOfWins"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="148dp"
-        android:layout_marginTop="32dp"
-        android:text="WINS"
+        android:text="WINS: 0"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/bLogOut"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/bLogOut" />
+
+    <Button
+        android:id="@+id/btnHost"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="48dp"
+        android:enabled="false"
+        android:text="Host Game"
+        android:textSize="32sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/bLogOut" />
 
-    <Button
-        android:enabled="false"
-        android:id="@+id/btnJoin"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/etNumberOfRounds"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="60dp"
-        android:layout_marginTop="368dp"
+        android:layout_marginTop="8dp"
+        android:hint="How many rounds?"
+        android:inputType="number"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/btnHost"
+        app:layout_constraintStart_toStartOf="@+id/btnHost"
+        app:layout_constraintTop_toBottomOf="@id/btnHost" />
+
+    <Button
+        android:id="@+id/btnJoin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="64dp"
+        android:enabled="false"
         android:text="Join Game"
-        android:textSize="50dp"
+        android:textSize="32sp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/etNumberOfRounds" />
 
     <EditText
         android:id="@+id/etLobbyId"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="60dp"
-        android:layout_marginTop="60dp"
-        android:hint="Lobby Id You Want to Join"
-        android:textSize="25dp"
-        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp"
+        android:hint="Enter Lobby ID"
+        android:inputType="textCapCharacters"
+        android:textAlignment="center"
+        app:layout_constraintEnd_toEndOf="@+id/btnJoin"
+        app:layout_constraintStart_toStartOf="@+id/btnJoin"
         app:layout_constraintTop_toBottomOf="@id/btnJoin" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

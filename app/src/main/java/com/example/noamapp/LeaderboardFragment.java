@@ -10,6 +10,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,10 +31,13 @@ public class LeaderboardFragment extends Fragment {
     private FirebaseFirestore dbz = FirebaseFirestore.getInstance();
     private FirebaseAuth mAuth = FirebaseAuth.getInstance();
 
+
+    private com.google.firebase.firestore.ListenerRegistration stateListener;
+    private com.google.firebase.firestore.ListenerRegistration leaderboardListener;
     private String lobbyID;
     private boolean isHost;
     private List<Player> playerList = new ArrayList<>();
-
+    private static final String TAG = "Noam";
     private TextView txtlobbyID;
     private RecyclerView recyclerView;
     private LeaderboardAdapter adapter;
@@ -88,52 +92,64 @@ public class LeaderboardFragment extends Fragment {
             //set 'inRound' to 'false' and 'isReady' for all players to 'false'
             resetPlayersForNextRound();
         });
-
+            Log.wtf(TAG, "test");
         btnEnd.setOnClickListener(v -> {
             if (playerList == null || playerList.isEmpty()) return;
 
-            // 1. Identify the Winner (Index 0 is the highest score)
             Player winner = playerList.get(0);
 
-            // 2. The Final Transaction: Update the Winner's Permanent Profile
+            // 1. Update Winner's permanent wins
             dbz.collection("users").document(winner.getuID())
                     .update("numberOfWins", com.google.firebase.firestore.FieldValue.increment(1))
                     .addOnSuccessListener(aVoid -> {
 
-                        // 3. Cleanup: Delete the Lobby Document
-                        // This triggers the 'SnapshotListener' on everyone else's phone to kick them out
-                        dbz.collection("gameInstance").document(lobbyID).delete()
-                                .addOnSuccessListener(deleted -> {
-                                    // 4. Exit: Close the Activity for the Host
-                                    if (getActivity() != null) {
-                                        // Create Intent to go back to MainMenu
-                                        Intent intent = new Intent(getActivity(), MainMenu.class);
-                                        // Clear the stack so this new MainMenu is the only thing open
-                                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-                                        startActivity(intent);
+                        // 2. NEW: Delete the players sub-collection first
+                        dbz.collection("gameInstance").document(lobbyID)
+                                .collection("players").get()
+                                .addOnSuccessListener(snapshot -> {
+                                    WriteBatch batch = dbz.batch();
 
-                                        getActivity().finish(); // Close the current Game_Page
+                                    // Add every player document to the delete batch
+                                    for (com.google.firebase.firestore.DocumentSnapshot doc : snapshot) {
+                                        batch.delete(doc.getReference());
                                     }
+
+                                    // Also add the lobby document itself to the batch
+                                    batch.delete(dbz.collection("gameInstance").document(lobbyID));
+
+                                    // 3. Commit the mass deletion
+                                    batch.commit().addOnSuccessListener(done -> {
+                                        if (getActivity() != null) {
+                                            Intent intent = new Intent(getActivity(), MainMenu.class);
+                                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                                            startActivity(intent);
+                                            getActivity().finish();
+                                        }
+                                    });
                                 });
-                    })
-                    .addOnFailureListener(e -> {
-                        Log.e("Fail","Failed to save the win!");
                     });
         });
 
         return view;
     }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // 2. VERY IMPORTANT: Stop the listeners when fragment is destroyed
+        if (stateListener != null) stateListener.remove();
+        if (leaderboardListener != null) leaderboardListener.remove();
+    }
 
     private void startLeaderboardListener() {
         // 1. Point to the players collection in this specific lobby
-        dbz.collection("gameInstance").document(lobbyID)
+        leaderboardListener = dbz.collection("gameInstance").document(lobbyID)
                 .collection("players")
                 .addSnapshotListener((value, error) -> {
                     if (error != null) {
                         Log.e("LOBBY_ERROR", "Listen failed.", error);
                         return;
                     }
-
+            Log.d(TAG, "Listener Started");
                     // Pass the 'value' (QuerySnapshot) to your new method
                     if (value != null) {
                         updateLeaderboard(value);
@@ -158,7 +174,12 @@ public class LeaderboardFragment extends Fragment {
                         break;
                     }
                 }
-
+Log.d(TAG, "allReady = "+allReady);
+                if (!allReady && isHost){
+                    btnNextRound.setVisibility(View.GONE);
+                    btnEnd.setVisibility(View.GONE);
+                    Log.d(TAG, "Should be gone");
+                }
                 // 4. Handle Button Visibility
                 if (allReady && isHost) {
                     if (roundsLeft != null && roundsLeft <= 0) {
@@ -199,19 +220,19 @@ public class LeaderboardFragment extends Fragment {
 
     // Inside LeaderboardFragment's onViewCreated or an initialization method
     private void setupStateListener() {
-        dbz.collection("gameInstance").document(lobbyID)
+        stateListener = dbz.collection("gameInstance").document(lobbyID)
                 .addSnapshotListener((snapshot, e) -> {
                     if (e != null) {
                         Log.e("LOBBY", "Listen failed.", e);
                         return;
                     }
-
+                    if (!isAdded() || getActivity() == null) return;
                     // --- THE KICK LOGIC ---
                     // If the document is null or doesn't exist, the Host has deleted it
                     if (snapshot == null || !snapshot.exists()) {
                         if (getActivity() != null) {
                             Toast.makeText(getContext(), "Game has ended!", Toast.LENGTH_SHORT).show();
-
+Log.e("Hi","I did it");
                             // Create Intent to go back to MainMenu
                             Intent intent = new Intent(getActivity(), MainMenu.class);
                             // Clear the stack so this new MainMenu is the only thing open
@@ -233,7 +254,7 @@ public class LeaderboardFragment extends Fragment {
 
                         getParentFragmentManager().beginTransaction()
                                 .remove(this)
-                                .commit();
+                                .commitAllowingStateLoss();
                     }
                 });
     }
